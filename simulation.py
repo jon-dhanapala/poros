@@ -6,11 +6,13 @@ import pandas as pd
 # initialize sim parameters
 # np.random.seed(0)
 
-SIM_DURATION=20*60 # minutes
+SIM_DURATION=20*60 # seconds
 IA_MEAN=2.18 # interarrival time mean
 IA_SIGMA=0.13 # interarrival time sigma
 SERVICE_TIME_BETA=211.9 # service time beta
-NUM_GAS_PUMPS = 2
+NUM_GAS_PUMPS=2
+NUM_GAS_LANES=8
+PROB_CARS_WAIT=0.3
 
 env = simpy.Environment()
 
@@ -29,7 +31,7 @@ env.df = pd.DataFrame(data=d)
 
 # MQ: array of length 8 with 2 resources/queue
 lanes = []
-for i in range(8):
+for i in range(NUM_GAS_LANES):
     lane = simpy.Resource(env, capacity=NUM_GAS_PUMPS)
     lanes.append(lane)
 print lanes
@@ -88,7 +90,7 @@ def __generate_interarrival_time():
 
 # generate inter arrival time
 def __generate_service_time():
-    return round(np.random.exponential(211.9), 3)
+    return round(np.random.exponential(SERVICE_TIME_BETA), 3)
 
 # generate inter arrival time
 def __generate_random_variable():
@@ -116,7 +118,7 @@ def __collect_stats(resource, result):
 def __should_car_wait(lane):
     if len(lane.queue) >= 12:
         x = __generate_random_variable()
-        return True if (x < 0.3) else False
+        return True if (x < PROB_CARS_WAIT) else False
     else:
         return True
 
