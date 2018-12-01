@@ -1,4 +1,4 @@
-﻿Car Number,Inter Arrival Time,Clock Time
+﻿Car Number,inter_arrival_time,Clock Time
 1,40.09,0
 2,10.15,40.09
 3,15.41,50.24
