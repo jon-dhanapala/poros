@@ -2,7 +2,7 @@ import pandas as pd
 import scipy.stats
 import numpy as np
 
-CDFS = [
+KTEST_CDFS = [
     "norm",            #Normal (Gaussian)
     "alpha",           #Alpha
     "anglit",          #Anglit
@@ -87,9 +87,13 @@ CDFS = [
     "kstwobign"        #Kolmogorov-Smirnov two-sided test for Large N
     ]
 
-def test_distribution(file_name,col_name):
+def read_data(file_name):
+    iat = pd.read_csv(file_name)
+    return iat
+
+def kstest_distribution(file_name,col_name):
     sample = read_data(file_name)[col_name]
-    for cdf in CDFS:
+    for cdf in KTEST_CDFS:
         try:
             #fit our data set against every probability distribution
             parameters = eval("scipy.stats."+cdf+".fit(sample)");
@@ -100,23 +104,50 @@ def test_distribution(file_name,col_name):
         except:
             c = 2
 
-def read_data(file_name):
-    iat = pd.read_csv(file_name)
-    return iat
-
 def chi_squared_test(file_name,col_name):
-    data = read_data(file_name)[col_name].sort_values().values
-    x = np.random.exponential((data.mean()),len(data)).round(decimals=2)
-    x = np.sort(x)
-    print(scipy.stats.chisquare(x,data))
-    # return exponential(1/lamda,read_data(file_name)[col_name])
+
+    data = read_data(file_name)[col_name].values
+
+    test = np.random.poisson(data.mean(), len(data))
+    chisq, p_value = scipy.stats.chisquare(test,data)
+    print("poisson, " + ",chi, "+str(chisq)  + ",p_value, "+str(p_value))
+
+    test = np.random.normal(data.mean(), len(data))
+    chisq, p_value = scipy.stats.chisquare(test,data)
+    print("normal, "+" ,chi, "+str(chisq)+" ,p_value, "+str(p_value))
+
+    test = np.random.gamma(data.mean(), len(data))
+    chisq, p_value = scipy.stats.chisquare(test,data)
+    print("gamma, "+" ,chi, "+str(chisq)+" ,p_value, "+str(p_value))
+
+    test = np.random.exponential(data.mean(), len(data))
+    chisq, p_value = scipy.stats.chisquare(test,data)
+    print("exponential, "+" ,chi, "+str(chisq)+" ,p_value, "+str(p_value))
+
+    test = np.random.lognormal(data.mean(), len(data))
+    chisq, p_value = scipy.stats.chisquare(test,data)
+    print("lognormal, "+" ,chi, "+str(chisq)+" ,p_value, "+str(p_value))
+
+    test = np.random.weibull(data.mean(), len(data))
+    chisq, p_value = scipy.stats.chisquare(test,data)
+    print("weibull, "+" ,chi, "+str(chisq)+" ,p_value, "+str(p_value))
+
+    test = np.random.beta(data.mean(), len(data))
+    chisq, p_value = scipy.stats.chisquare(test,data)
+    print("beta, "+" ,chi, "+str(chisq)+" ,p_value, "+str(p_value))
 
 def main():
-    # print("interarrival_times")
-    # test_distribution('interarrival_times.csv','inter_arrival_time')
-    # print("service_times")
-    # test_distribution('service_times.csv','service_times')
+    print("k_test_interarrival_times")
+    kstest_distribution('interarrival_times.csv','inter_arrival_time')
+    print()
+    print()
+    print("k_test_service_times")
+    kstest_distribution('service_times.csv','service_times')
+    print("chi_test_interarrival_times")
     chi_squared_test('interarrival_times.csv','inter_arrival_time')
+    print()
+    print()
+    print("chi_test_service_times")
     chi_squared_test('service_times.csv','service_times')
 
 if __name__ == '__main__':
