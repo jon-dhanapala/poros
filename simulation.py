@@ -211,7 +211,6 @@ def main():
             env.df = pd.DataFrame(data=d, columns=columns)
             env.num_arrivals = 0
             env.num_departures = 0
-            rank=1
 
             # MQ: array of length 8 with 2 resources/queue
             lanes = []
