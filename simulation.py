@@ -23,6 +23,9 @@ Ranks of Distribution:
     rank0: st: beta
     rank1: st: normal
     rank2: st: exponential
+
+    close delay: LOGNORMAL mean=-5.38 sigma=0.28
+    far delay: EXPONENTIAL beta=0.0105
 """
 
 # == DISTRIBUTION: NORMAL DISTRIBUTION === #
@@ -58,6 +61,7 @@ d = {
 'Clock Time': [],
 'Arrival Clock Time': [],
 'Interarrival Time': [],
+'Driving Time': [],
 'Service Duration': [],
 'Wait Time': [],
 'Sojurn Time': [],
@@ -111,15 +115,21 @@ def run_simulation(env, name, result, lanes, rank):
             wait_time = wait_time_end - wait_time_start
             result['Wait Time'] = wait_time
 
-            # === start service time ===
+            # === start driving to pump === #
+            driving_time = __get_driving_seconds()
+            print ("driving time %s " % driving_time)
+            result['Driving Time'] = driving_time
+            yield env.timeout(driving_time)
+
+            # === start service time === #
             print('%s starting service at %s' % (name, wait_time_end))
-            service_time = __generate_service_time(rank) # generate servicetime
+            service_time = __generate_service_time(rank) # generate service time
             print ("service time %s" % service_time)
             result['Service Duration'] = service_time
-            result['Sojurn Time'] = wait_time + service_time
+            result['Sojurn Time'] = wait_time + service_time + driving_time
             yield env.timeout(service_time)
 
-            # === end service time ===
+            # === end service time === #
             print('%s end service at %s' % (name, env.now))
             lane.release(req)
             env.num_departures += 1
@@ -146,6 +156,14 @@ def __generate_service_time(rank):
         return abs(round(np.random.normal(loc=NORMAL_ST_MEAN, scale=NOMRAL_ST_SD), 3)) # rank 1
     else:
         return round(np.random.exponential(EX_ST_BETA), 3) # rank 2
+
+# calculate the time to drive to the gas pump
+def __get_driving_seconds():
+    prob = __generate_random_variable()
+    if (prob > 0.5):
+        return round(np.random.lognormal(mean=(-5.38), sigma=(0.28)), 3)
+    else:
+        return round(np.random.exponential(0.0105), 3)
 
 # generate random variable time
 def __generate_random_variable():
@@ -207,10 +225,11 @@ def main():
     for rank in range(NUM_RANKS):
         for rep in range(NUM_REPLICATIONS):
             env = simpy.Environment()
-            columns=['Vehicle', 'Arrival Clock Time', 'Interarrival Time', 'Service Duration', 'Wait Time', 'Sojurn Time', 'Event Type', 'Clock Time', 'Num Vehicles in System', ' ', 'Queue 0 Size','Queue 1 Size','Queue 2 Size', 'Queue 3 Size', 'Queue 4 Size', 'Queue 5 Size', 'Queue 6 Size', 'Queue 7 Size']
+            columns=['Vehicle', 'Arrival Clock Time', 'Interarrival Time', 'Driving Time', 'Service Duration', 'Wait Time', 'Sojurn Time', 'Event Type', 'Clock Time', 'Num Vehicles in System', ' ', 'Queue 0 Size','Queue 1 Size','Queue 2 Size', 'Queue 3 Size', 'Queue 4 Size', 'Queue 5 Size', 'Queue 6 Size', 'Queue 7 Size']
             env.df = pd.DataFrame(data=d, columns=columns)
             env.num_arrivals = 0
             env.num_departures = 0
+            rank = 0
 
             # MQ: array of length 8 with 2 resources/queue
             lanes = []
@@ -222,7 +241,7 @@ def main():
             env.process(start_simulation(env, lanes, rank))
             env.run(until=SIM_DURATION)
 
-            csv_name = ('results_rank_%s_rep_%s.csv' % (rank, rep))
+            csv_name = ('test_results_rank_%s_rep_%s.csv' % (rank, rep))
             print ("total num vechicles arrived: %s" % (env.num_arrivals))
             ia_distribution_name = __get_ia_distribution_name(rank)
             st_distribution_name = __get__st_distribution_name(rank)
